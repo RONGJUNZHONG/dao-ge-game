@@ -282,7 +282,7 @@
         {level:28,speaker:"叨哥",bgImage:"level28.jpg",dialogue:"我恐高，快帮我爬上屋顶抓橘猫！",options:[{text:"热心爬上瓦顶",correct:false,msg:"踩碎瓦片没抓着猫，被阿婆骂半小时。"},{text:"拿竹竿在下面捅",correct:false,msg:"把蜂窝捅了，被野黄蜂追得狂奔。"},{text:"在树下用猫粮引",correct:true,msg:"猫自己乖乖跳了下来。"}]},
         {level:29,speaker:"叨哥",bgImage:"level29.jpg",dialogue:"下暴雨没带伞，快让个位挤一挤！",options:[{text:"心软挤伞",correct:false,msg:"伞全倾向他，你淋透重感冒发烧。"},{text:"伞给他自己淋",correct:false,msg:"伞借给别人再没回来。"},{text:"掏塑料袋套他头上",correct:true,msg:"你撑伞优雅走开，他套塑料袋狂奔。"}]},
         {level:30,speaker:"叨哥",bgImage:"level30.jpg",dialogue:"发工资了！去大酒店请客，不来不是兄弟！",options:[{text:"兴冲冲赴宴",correct:false,msg:"结账他装醉不省人事，你掏2000买单。"},{text:"抢先把单买了",correct:false,msg:"正中下怀，他还打包带走两只帝王蟹。"},{text:"推脱陪妈妈吃饭",correct:true,msg:"完美推掉终极鸿门宴，保住钱包。"}]},
-        {level:31,speaker:"系统提示",bgImage:"",dialogue:"【终极关卡通关大考】<br><br>经历了这么多，请问：叨哥的同学到底叫什么名字？",options:[{text:"面包",correct:false,msg:"那是早餐，不是同学！重头来过吧！"},{text:"LV包包",correct:false,msg:"太奢侈了，他不配有这么贵气的同学！"},{text:"菜包",correct:true,msg:"回答正确！菜包才是永远滴神！恭喜通关！"}]}
+        {level:31,speaker:"系统提示",bgImage:"",dialogue:"【终极关卡通关大考】<br><br>经历了这么多，请问：叨哥的同学到底叫什么名字？",options:[{text:"面包",correct:false,msg:"那是早餐，不是同学！重头来过吧！"},{text:"LV包包",correct:false,msg:"太奢侈了，他不配有这么贵气的同学！"},{text:"肉包",correct:true,msg:"回答正确！肉包才是永远滴神！恭喜通关！"}]}
         ];
 
         let currentIndex=0;
@@ -290,12 +290,24 @@
         const elSpeaker=document.getElementById('ui-speaker'),elDialogue=document.getElementById('ui-dialogue'),elOptions=document.getElementById('ui-options'),elBgLayer=document.getElementById('bg-layer');
         const elModal=document.getElementById('modal'),elModalTitle=document.getElementById('modal-title'),elModalDesc=document.getElementById('modal-desc'),elModalBtn=document.getElementById('modal-btn'),elModalCard=document.getElementById('modal-card');
 
+        // 新增预加载函数：在后台悄悄下载后续图片
+        function preloadAllImages() {
+            const imagesToPreload = gameData.map(d => d.bgImage).filter(Boolean);
+            imagesToPreload.forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+        }
+
         function startGame(){
             try {
                 elScreenStart.classList.remove('active');
                 elScreenGame.classList.add('active');
                 currentIndex=0;
                 loadLevel();
+                
+                // 启动静默预加载
+                preloadAllImages();
             } catch(err) {
                 console.error("界面加载出错:", err);
             }
