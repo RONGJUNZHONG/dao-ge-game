@@ -131,7 +131,7 @@
 </head>
 <body>
     <div id="game-container">
-        <!-- 开始界面：使用原生的 button 覆盖全屏，完美解决移动端/平板点击没反应的问题 -->
+        <!-- 开始界面 -->
         <div id="screen-start" class="screen active bg-black">
             <div class="absolute inset-0 w-full h-full bg-cover bg-center character-breathe" style="background-image: url('image_b1ec04.jpg');"></div>
             <!-- 这个透明按钮会吸收所有的点击事件 -->
@@ -142,12 +142,10 @@
         <div id="screen-game" class="screen bg-black">
             <div id="bg-layer" class="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat character-breathe z-0"></div>
             <div class="absolute inset-0 w-full h-full flex flex-col justify-end px-4 pb-6 z-10 pointer-events-none">
-                <!-- 剧情对话框调整到了上方，并增加了 mb-4 与下方选项隔开 -->
                 <div class="dialog-box-new z-10 mb-4">
                     <div id="ui-speaker" class="absolute -top-5 left-4 bg-yellow-400 text-black border-2 border-black rounded-lg px-4 py-1 font-bold text-lg shadow-[2px_2px_0px_#000]">叨哥</div>
                     <div id="ui-dialogue" class="text-xl font-bold text-gray-900 leading-snug mt-2">加载中...</div>
                 </div>
-                <!-- 选项容器调整到了最下方 -->
                 <div id="ui-options" class="flex flex-col gap-3 w-full z-20"></div>
             </div>
         </div>
@@ -185,7 +183,7 @@
                 if (!audioCtx) audioCtx = new AudioContextClass();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
             } catch (e) {
-                console.warn("音频初始化被拦截或不支持:", e);
+                console.warn("音频初始化被拦截:", e);
             }
         }
         
@@ -290,14 +288,14 @@
         const elSpeaker=document.getElementById('ui-speaker'),elDialogue=document.getElementById('ui-dialogue'),elOptions=document.getElementById('ui-options'),elBgLayer=document.getElementById('bg-layer');
         const elModal=document.getElementById('modal'),elModalTitle=document.getElementById('modal-title'),elModalDesc=document.getElementById('modal-desc'),elModalBtn=document.getElementById('modal-btn'),elModalCard=document.getElementById('modal-card');
 
-        // 新增预加载函数：在后台悄悄下载后续图片
-        function preloadAllImages() {
+        // 新增：让预加载在网页一打开时立刻执行，而不是等点击开始！
+        window.onload = () => {
             const imagesToPreload = gameData.map(d => d.bgImage).filter(Boolean);
             imagesToPreload.forEach(src => {
                 const img = new Image();
                 img.src = src;
             });
-        }
+        };
 
         function startGame(){
             try {
@@ -305,9 +303,6 @@
                 elScreenGame.classList.add('active');
                 currentIndex=0;
                 loadLevel();
-                
-                // 启动静默预加载
-                preloadAllImages();
             } catch(err) {
                 console.error("界面加载出错:", err);
             }
