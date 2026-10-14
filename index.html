@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>与叨哥的斗智斗勇 - 完整30关</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #111827;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            max-height: 850px;
+            background-color: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+        .screen.active {
+            display: flex;
+        }
+        @keyframes breathe {
+            0% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.025) translateY(-4px); }
+            100% { transform: scale(1) translateY(0); }
+        }
+        .character-breathe {
+            animation: breathe 3.5s infinite ease-in-out;
+            transform-origin: bottom center;
+        }
+        .neon-btn {
+            background-color: rgba(31, 41, 55, 0.95);
+            color: white;
+            border: 3px solid #fbbf24;
+            border-radius: 12px;
+            padding: 14px 20px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            user-select: none;
+            pointer-events: auto;
+            width: 100%;
+        }
+        .neon-btn:active {
+            transform: scale(0.96);
+        }
+        .dialog-box-new {
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 6px solid #fbbf24;
+            border-radius: 16px;
+            padding: 20px 16px 16px 16px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            min-height: 100px;
+            pointer-events: auto;
+        }
+        .comic-btn {
+            background-color: #fde047;
+            border: 4px solid #1f2937;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #1f2937;
+            box-shadow: 4px 4px 0px #1f2937;
+            transition: all 0.1s ease-in-out;
+            cursor: pointer;
+            text-align: center;
+        }
+        .comic-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #1f2937;
+        }
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-card {
+            background: white;
+            border: 4px solid #1f2937;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- 开始界面：使用原生的 button 覆盖全屏，完美解决移动端/平板点击没反应的问题 -->
+        <div id="screen-start" class="screen active bg-black">
+            <div class="absolute inset-0 w-full h-full bg-cover bg-center character-breathe" style="background-image: url('image_b1ec04.jpg');"></div>
+            <!-- 这个透明按钮会吸收所有的点击事件 -->
+            <button class="absolute inset-0 z-50 w-full h-full opacity-0 cursor-pointer" onclick="startGame()"></button>
+        </div>
+
+        <!-- 游戏主界面 -->
+        <div id="screen-game" class="screen bg-black">
+            <div id="bg-layer" class="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat character-breathe z-0"></div>
+            <div class="absolute inset-0 w-full h-full flex flex-col justify-end px-4 pb-6 z-10 pointer-events-none">
+                <!-- 剧情对话框调整到了上方，并增加了 mb-4 与下方选项隔开 -->
+                <div class="dialog-box-new z-10 mb-4">
+                    <div id="ui-speaker" class="absolute -top-5 left-4 bg-yellow-400 text-black border-2 border-black rounded-lg px-4 py-1 font-bold text-lg shadow-[2px_2px_0px_#000]">叨哥</div>
+                    <div id="ui-dialogue" class="text-xl font-bold text-gray-900 leading-snug mt-2">加载中...</div>
+                </div>
+                <!-- 选项容器调整到了最下方 -->
+                <div id="ui-options" class="flex flex-col gap-3 w-full z-20"></div>
+            </div>
+        </div>
+
+        <!-- 胜利界面 -->
+        <div id="screen-victory" class="screen" style="background-color: #86efac; justify-content: center; align-items: center; padding: 20px; z-index: 50;">
+            <div class="bg-white border-4 border-gray-800 rounded-2xl p-8 text-center shadow-[8px_8px_0px_#1f2937] w-full max-w-sm">
+                <h1 class="text-4xl text-green-500 mb-4 font-bold" style="text-shadow: 2px 2px 0 #1f2937;">🎉 通关成功！</h1>
+                <h2 class="text-xl text-gray-800 mb-6 font-bold">你成功识破了叨哥所有的套路！</h2>
+                <div class="w-32 h-32 mx-auto border-4 border-gray-800 rounded-full overflow-hidden mb-6 bg-gray-200">
+                     <img src="image_b1ec04.jpg" alt="叨哥" class="w-full h-full object-cover object-top">
+                </div>
+                <button class="comic-btn w-full" onclick="location.reload()">再玩一次</button>
+            </div>
+        </div>
+
+        <!-- 弹窗 -->
+        <div id="modal" class="modal-overlay">
+            <div id="modal-card" class="modal-card">
+                <h2 id="modal-title" class="text-2xl font-bold mb-2">提示</h2>
+                <p id="modal-desc" class="text-gray-700 text-left mb-6 font-bold leading-relaxed text-lg"></p>
+                <button id="modal-btn" class="comic-btn w-full text-lg"></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 音效引擎防崩溃处理
+        let audioCtx=null, bgmInterval=null;
+        
+        function initAudio(){
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return; 
+                if (!audioCtx) audioCtx = new AudioContextClass();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (e) {
+                console.warn("音频初始化被拦截或不支持:", e);
+            }
+        }
+        
+        function startBGM(){
+            if(bgmInterval || !audioCtx) return;
+            bgmInterval=setInterval(()=>{
+                try {
+                    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+                    osc.type='triangle';
+                    const notes=[261.63,293.66,329.63,392.00,440.00,523.25];
+                    osc.frequency.setValueAtTime(notes[Math.floor(Math.random()*notes.length)],audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.03,audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.2);
+                    osc.connect(gain);gain.connect(audioCtx.destination);
+                    osc.start();osc.stop(audioCtx.currentTime+0.25);
+                } catch(e) {}
+            },350);
+        }
+        
+        function playClickSound(){
+            if(!audioCtx) return;
+            try{
+                const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+                osc.type='sine';
+                osc.frequency.setValueAtTime(400,audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800,audioCtx.currentTime+0.1);
+                gain.gain.setValueAtTime(0.1,audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);
+                osc.connect(gain);gain.connect(audioCtx.destination);
+                osc.start();osc.stop(audioCtx.currentTime+0.12);
+            }catch(e){}
+        }
+        
+        function playSuccessSound(){
+            if(!audioCtx) return;
+            try{
+                const now=audioCtx.currentTime;
+                [523.25,659.25,783.99].forEach((n,i)=>{
+                    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+                    osc.frequency.setValueAtTime(n,now+i*0.08);
+                    gain.gain.setValueAtTime(0.1,now+i*0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+0.2);
+                    osc.connect(gain);gain.connect(audioCtx.destination);
+                    osc.start(now+i*0.08);osc.stop(now+i*0.08+0.25);
+                });
+            }catch(e){}
+        }
+        
+        function playFailSound(){
+            if(!audioCtx) return;
+            try{
+                const now=audioCtx.currentTime;
+                [200,150].forEach((n,i)=>{
+                    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+                    osc.type='sawtooth';
+                    osc.frequency.setValueAtTime(n,now+i*0.15);
+                    gain.gain.setValueAtTime(0.12,now+i*0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.3);
+                    osc.connect(gain);gain.connect(audioCtx.destination);
+                    osc.start(now+i*0.15);osc.stop(now+i*0.15+0.35);
+                });
+            }catch(e){}
+        }
+
+        // 31 关紧凑数据
+        const gameData=[
+        {level:1,speaker:"叨哥",bgImage:"level1.jpg",dialogue:"哎呀老表，我手机剩 2% 电了，借个充电宝来，等下我买单！",options:[{text:"借给他",correct:false,msg:"冒烟差点引发火灾！警局一夜游。"},{text:"借给他但要求抵押",correct:false,msg:"他把破洞袜子押给你，你亏大了！"},{text:"捂住口袋说自己也快没电了",correct:true,msg:"成功保住充电宝，安稳吃完宵夜！"}]},
+        {level:2,speaker:"叨哥",bgImage:"level2.jpg",dialogue:"快快快！我卡在购物车里出不来了，快把我拔出来！",options:[{text:"帮忙扶起来并使劲拔",correct:false,msg:"车子撞倒了名贵茅台酒，打工赔酒去了。"},{text:"帮他喊路人一起拔",correct:false,msg:"路人以为你们在偷购物车报了警。"},{text:"不帮并拍照大喊保安",correct:true,msg:"保安把他解救出来，收获黑历史表情包。"}]},
+        {level:3,speaker:"叨哥",bgImage:"level3.jpg",dialogue:"去镇上啊？载上我！挤一挤总会有的，我坐你大腿上也行！",options:[{text:"让他挤进来",correct:false,msg:"交警查超载，扣6分罚款200。"},{text:"让他坐后备箱",correct:false,msg:"半路他跳车扭伤了脚，你送他去急诊。"},{text:"不载，一脚油门溜了",correct:true,msg:"一脚油门呼啸而去，安全到达镇上。"}]},
+        {level:4,speaker:"叨哥",bgImage:"level4.jpg",dialogue:"帮我买包华丰三鲜面，我急着去拉屎，帮我给钱和拿一下！",options:[{text:"帮忙买",correct:false,msg:"等了半小时他都没影，你白当工具人。"},{text:"让他自己扫码",correct:false,msg:"他抢你手机顺手拿了两包中华烟结账。"},{text:"说要回家睡觉拒绝",correct:true,msg:"回家睡了个安稳觉，避开无聊的等待。"}]},
+        {level:5,speaker:"叨哥",bgImage:"level5.jpg",dialogue:"饿死了！带上我和我弟去吃宵夜，你请客！",options:[{text:"带去大排档",correct:false,msg:"俩兄弟溜走，留你面对800块账单。"},{text:"带去吃路边沙县小吃",correct:false,msg:"他弟把汤泼在你新衣服上跑路了。"},{text:"不带，说车坐不下且胃痛",correct:true,msg:"飞速驶离，成功保住钱包。"}]},
+        {level:6,speaker:"叨哥",bgImage:"level6.jpg",dialogue:"去哪里啊？带什么好东西？",options:[{text:"老实回答去钓鱼",correct:false,msg:"他大呼小叫把鱼全吓跑，还折了鱼竿。"},{text:"回答去相亲",correct:false,msg:"他当僚机当场抖你黑料，把对象吓跑。"},{text:"敷衍回答唔知",correct:true,msg:"他失去兴趣找别人，你享受了安静下午。"}]},
+        {level:7,speaker:"叨哥",bgImage:"level7.jpg",dialogue:"把你的摩托车借我开去隔壁村见个精神小妹！",options:[{text:"大方借给他",correct:false,msg:"他去飙车撞进泥潭，大半夜叫你赎车。"},{text:"要求他加满油再还",correct:false,msg:"他加了柴油，发动机直接光荣报废。"},{text:"谎称油箱漏油",correct:true,msg:"他只好骑破自行车去，半路链条还断了。"}]},
+        {level:8,speaker:"叨哥",bgImage:"level8.jpg",dialogue:"老表，拼刀刀差一刀拿大奖，帮我点一下链接！",options:[{text:"点开帮砍",correct:false,msg:"手机被强装流氓软件，还要转发50个群。"},{text:"让他发个红包才帮",correct:false,msg:"他发红包夹带木马病毒，你微信被盗号。"},{text:"假装没看到",correct:true,msg:"第二天回哎呀睡着了，相安无事。"}]},
+        {level:9,speaker:"叨哥",bgImage:"level9.jpg",dialogue:"快拿锤子帮我拍一个胸口碎大石的搞笑视频！",options:[{text:"拿锤子砸",correct:false,msg:"锤子砸到了他的脚趾头，你垫付了医药费。"},{text:"让他自己砸自己",correct:false,msg:"锤子脱手砸碎村长家玻璃，你作为同伙受罚。"},{text:"借口没电拒绝",correct:true,msg:"眼疾手快跑路，完美避开了医疗事故。"}]},
+        {level:10,speaker:"叨哥",bgImage:"level10.jpg",dialogue:"老表快跑！大狼狗来了，分头跑还是一起跑？",options:[{text:"一起跑",correct:false,msg:"叨哥把你推在后面挡狗，你狼狈爬树。"},{text:"扔火腿肠",correct:false,msg:"火腿肠渣全粘你衣服上，狗改追你。"},{text:"往相反方向跑回家关门",correct:true,msg:"你冲回家，叨哥被狂追三圈。"}]},
+        {level:11,speaker:"叨哥",bgImage:"level11.jpg",dialogue:"老表！来村宴坐我这桌，等下有硬菜大肘子！",options:[{text:"高兴坐过去",correct:false,msg:"大妈战斗力爆表，菜被秒光，你饿肚子。"},{text:"抢主位",correct:false,msg:"不懂尊长规矩被长辈罚扫祠堂一天。"},{text:"去坐小朋友那桌",correct:true,msg:"快乐吃到了炸大虾和椰汁。"}]},
+        {level:12,speaker:"叨哥",bgImage:"level12.jpg",dialogue:"老表，来帮搬宿舍，就几件衣服！",options:[{text:"二话不说去帮",correct:false,msg:"一堆旧冰箱且没电梯，搬完腰间盘突出。"},{text:"叫他雇货拉拉",correct:false,msg:"他疯狂哭穷，最后还是拉你当苦力。"},{text:"借口腰疼拒绝",correct:true,msg:"果断说闪了腰，完美逃过一劫。"}]},
+        {level:13,speaker:"叨哥",bgImage:"level13.jpg",dialogue:"后山那片荔枝林没人要，偷偷摘点吃！",options:[{text:"跟着爬树去摘",correct:false,msg:"老板带藏獒冲出来，当场被抓获。"},{text:"在树下接",correct:false,msg:"还没接到就被保安抓获通知家属。"},{text:"劝阻并离开",correct:true,msg:"你直接走人，听说叨哥被罚拔草三天。"}]},
+        {level:14,speaker:"叨哥",bgImage:"level14.jpg",dialogue:"微信借我50块加个油，马上还！",options:[{text:"转账借他",correct:false,msg:"他直接人间蒸发，问就是下次一定。"},{text:"扫码帮付现金",correct:false,msg:"他顺势把打火机槟榔算你账单里。"},{text:"说只有现金且刚好够",correct:true,msg:"捂紧钱包，他只好找老板厚脸皮商量。"}]},
+        {level:15,speaker:"叨哥",bgImage:"level15.jpg",dialogue:"帮我守5分钟套圈摊！",options:[{text:"热心帮忙守",correct:false,msg:"熊孩子乱套砸烂摊位，叨哥还怪你。"},{text:"帮他吆喝",correct:false,msg:"把劣质产品卖给村长，被抓现行。"},{text:"拒绝说去相亲",correct:true,msg:"挥手走开，绝不蹚浑水。"}]},
+        {level:16,speaker:"叨哥",bgImage:"level16.jpg",dialogue:"快帮我写一封给阿珍的情书！",options:[{text:"帮他写",correct:false,msg:"他贴门上还署你的名，阿珍爸追杀你。"},{text:"用文言文写",correct:false,msg:"阿珍以为恐吓信发群里让你社死。"},{text:"让他用AI写",correct:true,msg:"因太敷衍被光速拉黑，与你无关。"}]},
+        {level:17,speaker:"叨哥",bgImage:"level17.jpg",dialogue:"去田里抓黄鳝，晚上爆炒加餐！",options:[{text:"跟着去",correct:false,msg:"全是水蛇和蚂蟥被咬，叨哥摔进粪坑。"},{text:"空手看热闹",correct:false,msg:"光脚踩到玻璃去医院打破伤风。"},{text:"拒绝在家吹空调",correct:true,msg:"躺家看电视吃西瓜，完美避开灾难。"}]},
+        {level:18,speaker:"叨哥",bgImage:"level18.jpg",dialogue:"尝尝我新研发的秘制黑菜，好吃得很！",options:[{text:"给面子尝口",correct:false,msg:"当晚急性肠胃炎住进医院挂水。"},{text:"假装咽下夸奖",correct:false,msg:"他又盛了一大碗，盛情难却差点撑死。"},{text:"夹给小黄狗",correct:true,msg:"狗闻了下当场刨土埋了，叨哥无语。"}]},
+        {level:19,speaker:"叨哥",bgImage:"level19.jpg",dialogue:"预感极好，合买100块刮刮乐中平分！",options:[{text:"掏50合伙",correct:false,msg:"只中5块，他抢去换包辣条全吃了。"},{text:"全资让他刮",correct:false,msg:"中奖后他说是他手气好，一毛不分你。"},{text:"拒绝，买双色球",correct:true,msg:"没中大奖但也没当冤大头。"}]},
+        {level:20,speaker:"叨哥",bgImage:"level20.jpg",dialogue:"去村邮局帮我拿个‘小件’快递！",options:[{text:"爽快答应",correct:false,msg:"是50斤猪饲料，扛回村差点累死。"},{text:"骑车载去",correct:false,msg:"超载半路重心不稳翻车摔进沟里。"},{text:"拒绝让他自己去",correct:true,msg:"他硬用电瓶车驮，半路爆胎推回来。"}]},
+        {level:21,speaker:"叨哥",bgImage:"level21.jpg",dialogue:"上号带你飞，今晚必上王者！",options:[{text:"扫码上号",correct:false,msg:"他0-15还喷队友，连累你禁言掉段。"},{text:"选辅助跟着他",correct:false,msg:"他狂送人头怪你没保护好，气得砸手机。"},{text:"拒绝加班写作业",correct:true,msg:"保住了段位和宝贵的血压。"}]},
+        {level:22,speaker:"叨哥",bgImage:"level22.jpg",dialogue:"快陪我上去广场舞斗舞展示活力！",options:[{text:"硬着头皮去",correct:false,msg:"搞怪视频发到村民大群社死一年。"},{text:"抢C位领舞",correct:false,msg:"动作滑稽把大妈气得高血压复发。"},{text:"在旁边看并拍照",correct:true,msg:"拍下珍贵社死视频留念。"}]},
+        {level:23,speaker:"叨哥",bgImage:"level23.jpg",dialogue:"前面拖拉机超车！超他展示秋名山车技！",options:[{text:"加速超车",correct:false,msg:"弯道躲牛冲进灌木丛满身是刺。"},{text:"按喇叭挑衅",correct:false,msg:"大爷脾气火爆尾随追骂五公里。"},{text:"无视他稳稳开",correct:true,msg:"佛系开车，平平安安到家。"}]},
+        {level:24,speaker:"叨哥",bgImage:"level24.jpg",dialogue:"有个稳赚项目！出200去摆摊卖会飞玩具！",options:[{text:"掏钱入股",correct:false,msg:"无证经营被城管没收，投资血本无归。"},{text:"负责去进货",correct:false,msg:"劣质玩具砸路人脑门赔了医药费。"},{text:"坚决不投",correct:true,msg:"看穿他的不靠谱，一分钱不掏。"}]},
+        {level:25,speaker:"叨哥",bgImage:"level25.jpg",dialogue:"我去当伴郎，拉你一起接新娘有红包！",options:[{text:"高高兴兴去",correct:false,msg:"被伴娘疯狂整蛊，红包只2块还要洗碗。"},{text:"抢着去挡酒",correct:false,msg:"被灌三斤白酒，吐了一夜。"},{text:"在家等吃席",correct:true,msg:"完美避开折腾，舒舒服服吃喜宴。"}]},
+        {level:26,speaker:"叨哥",bgImage:"level26.jpg",dialogue:"撞碎村委会盆栽了，帮看着有人来咳嗽一声！",options:[{text:"帮忙放哨",correct:false,msg:"村长从后面拍你，一起写检讨赔偿。"},{text:"帮拿胶水粘",correct:false,msg:"粘歪七扭八被村支书当场抓获。"},{text:"说没看见迅速跑路",correct:true,msg:"大难临头各自飞，免受牵连。"}]},
+        {level:27,speaker:"叨哥",bgImage:"level27.jpg",dialogue:"老表，急用，把安卓 Type-C 充电线借我一下！",options:[{text:"爽快借给",correct:false,msg:"用完直接顺走，问就是不知道丢哪了。"},{text:"让他押身份证",correct:false,msg:"拿过期会员卡糊弄你，回头找不到人。"},{text:"说自己用的是苹果",correct:true,msg:"掏出苹果线拒绝，保住贵重物品。"}]},
+        {level:28,speaker:"叨哥",bgImage:"level28.jpg",dialogue:"我恐高，快帮我爬上屋顶抓橘猫！",options:[{text:"热心爬上瓦顶",correct:false,msg:"踩碎瓦片没抓着猫，被阿婆骂半小时。"},{text:"拿竹竿在下面捅",correct:false,msg:"把蜂窝捅了，被野黄蜂追得狂奔。"},{text:"在树下用猫粮引",correct:true,msg:"猫自己乖乖跳了下来。"}]},
+        {level:29,speaker:"叨哥",bgImage:"level29.jpg",dialogue:"下暴雨没带伞，快让个位挤一挤！",options:[{text:"心软挤伞",correct:false,msg:"伞全倾向他，你淋透重感冒发烧。"},{text:"伞给他自己淋",correct:false,msg:"伞借给别人再没回来。"},{text:"掏塑料袋套他头上",correct:true,msg:"你撑伞优雅走开，他套塑料袋狂奔。"}]},
+        {level:30,speaker:"叨哥",bgImage:"level30.jpg",dialogue:"发工资了！去大酒店请客，不来不是兄弟！",options:[{text:"兴冲冲赴宴",correct:false,msg:"结账他装醉不省人事，你掏2000买单。"},{text:"抢先把单买了",correct:false,msg:"正中下怀，他还打包带走两只帝王蟹。"},{text:"推脱陪妈妈吃饭",correct:true,msg:"完美推掉终极鸿门宴，保住钱包。"}]},
+        {level:31,speaker:"系统提示",bgImage:"",dialogue:"【终极关卡通关大考】<br><br>经历了这么多，请问：叨哥的同学到底叫什么名字？",options:[{text:"面包",correct:false,msg:"那是早餐，不是同学！重头来过吧！"},{text:"LV包包",correct:false,msg:"太奢侈了，他不配有这么贵气的同学！"},{text:"菜包",correct:true,msg:"回答正确！菜包才是永远滴神！恭喜通关！"}]}
+        ];
+
+        let currentIndex=0;
+        const elScreenStart=document.getElementById('screen-start'),elScreenGame=document.getElementById('screen-game'),elScreenVictory=document.getElementById('screen-victory');
+        const elSpeaker=document.getElementById('ui-speaker'),elDialogue=document.getElementById('ui-dialogue'),elOptions=document.getElementById('ui-options'),elBgLayer=document.getElementById('bg-layer');
+        const elModal=document.getElementById('modal'),elModalTitle=document.getElementById('modal-title'),elModalDesc=document.getElementById('modal-desc'),elModalBtn=document.getElementById('modal-btn'),elModalCard=document.getElementById('modal-card');
+
+        function startGame(){
+            try {
+                elScreenStart.classList.remove('active');
+                elScreenGame.classList.add('active');
+                currentIndex=0;
+                loadLevel();
+            } catch(err) {
+                console.error("界面加载出错:", err);
+            }
+            
+            try {
+                initAudio();
+                startBGM();
+                playClickSound();
+            } catch(err) {
+                console.warn("由于浏览器限制，音频加载失败，不影响游戏体验");
+            }
+        }
+        
+        function shuffleArray(arr){let c=arr.length,r;while(c!=0){r=Math.floor(Math.random()*c);c--;[arr[c],arr[r]]=[arr[r],arr[c]];}return arr;}
+
+        function loadLevel(){
+            const data=gameData[currentIndex];
+            elBgLayer.style.backgroundImage=`url('${data.bgImage?data.bgImage:'image_b1ec04.jpg'}')`;
+            elSpeaker.innerText=data.speaker;elDialogue.innerHTML=data.dialogue;
+            elSpeaker.style.backgroundColor=data.speaker==="系统提示"?"#9ca3af":"#fbbf24";
+            elSpeaker.style.color=data.speaker==="系统提示"?"white":"black";
+            elOptions.innerHTML='';
+            const opts=shuffleArray([...data.options]),labels=['A','B','C'];
+            opts.forEach((o,i)=>{
+                const btn=document.createElement('div');btn.className=`neon-btn`;
+                btn.innerHTML=`<span class="text-yellow-400 mr-3 text-2xl font-black">${labels[i]}:</span><span class="flex-1 text-lg">${o.text}</span>`;
+                btn.onclick=()=>{
+                    try{ playClickSound(); }catch(e){}
+                    handleChoice(o.correct,o.msg);
+                };
+                elOptions.appendChild(btn);
+            });
+        }
+
+        function handleChoice(isCor,msg){
+            elModalDesc.innerText=msg;
+            if(isCor){
+                try{ playSuccessSound(); }catch(e){}
+                const titleText = currentIndex===gameData.length-1 ? "太牛了！😎" : `第 ${gameData[currentIndex].level} 关 通关！🎉`;
+                showModal(titleText,msg,true,currentIndex===gameData.length-1);
+            }
+            else{
+                try{ playFailSound(); }catch(e){}
+                showModal("游戏失败！😭",msg,false,false);
+            }
+        }
+
+        function showModal(title,desc,isCor,isVic){
+            elModalTitle.innerText=title;elModalTitle.style.color=isCor?'#10b981':'#ef4444';elModalCard.style.borderColor=isCor?'#10b981':'#ef4444';
+            elModalBtn.innerText=isCor?(isVic?"查看最终结局":"进入下一关"):"重新尝试本关";
+            elModalBtn.onclick=()=>{
+                try{ playClickSound(); }catch(e){}
+                elModal.classList.remove('active');
+                if(isCor){
+                    if(isVic){
+                        elScreenGame.classList.remove('active');
+                        elScreenVictory.classList.add('active');
+                    }else{
+                        currentIndex++;
+                        loadLevel();
+                    }
+                }
+            };
+            elModal.classList.add('active');
+        }
+    </script>
+</body>
+</html>
